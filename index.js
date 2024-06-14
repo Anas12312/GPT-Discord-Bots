@@ -1,7 +1,36 @@
+const { OpenAI } = require('openai')
 const bot1 = require('./bot-1')
 const bot2 = require('./bot-2')
 const fetchAllMessages = require('./fetchHistory')
 const gptRequest = require('./gptRequest')
+const config = require('./config')
+
+const chats = []
+const openai = new OpenAI({
+    apiKey: config.OPEN_AI_TOKEN,
+  });
+bot1.on('interactionCreate', async interaction => {
+    if (!interaction.isChatInputCommand()) return;
+
+    if (interaction.commandName === 'ping') {
+        await interaction.reply('Pong!');
+    }
+
+    if (interaction.commandName === 'start') {
+        if (chats.filter((c) => c.channelId === interaction.channelId)[0]) {
+            await interaction.reply("Another chat has already started here!")
+            return 
+        }
+
+        const thread = await openai.beta.threads.create();
+        chats.push({
+            channelId: interaction.channelId,
+            threadId: thread.id
+        })
+
+        await interaction.reply("Started Successfully!")
+    }
+});
 
 bot1.on("messageCreate", async (message) => {
     if (message.author.bot) return

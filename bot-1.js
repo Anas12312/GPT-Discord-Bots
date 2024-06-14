@@ -7,6 +7,10 @@ const commands = [
         name: 'ping',
         description: 'Replies with Pong!',
     },
+    {
+        name: 'start',
+        description: 'Starts a new conversation with bots in this channel'
+    }
 ];
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
@@ -28,19 +32,14 @@ run()
 const { Client, GatewayIntentBits } = require('discord.js');
 const fetchAllMessages = require("./fetchHistory");
 const gptRequest = require("./gptRequest");
+const { OpenAI } = require("openai");
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
 });
 
-client.on('interactionCreate', async interaction => {
-    if (!interaction.isChatInputCommand()) return;
 
-    if (interaction.commandName === 'ping') {
-        await interaction.reply('Pong!');
-    }
-});
 
 
 module.exports = client

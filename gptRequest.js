@@ -11,7 +11,7 @@ const openai = new OpenAI({
 async function getGPTResponse(prompt, history) {
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'asst_7xGPqkRNHVgHGpdEJ4pCIF4s',
       messages: [
         { role: 'system', content: "You act as two assistant model (GPT Bot-1, GPT Bot-2), the bots may have different opinions,  I need you to generate only one of four cases with the following probability, case 1(5%): GPT Bot-1 only respond, case 2(5%): GPT Bot-2 only respond, case 3(45%): GPT Bot-1 respond then GPT Bot-2 give his opinion on GPT Bot-1 response, case 4(45%): full conversation between GPT Bot-1 and GPT Bot-2 discussing and responding,  I want you to write the name of the bot in the first of the response GPT Bot-1 for GPT Bot-1 and GPT Bot-2 for GPT Bot-2 of each response and split between different bot responses with @@-@@" },
         ...history,
