@@ -45,3 +45,58 @@ function getAllHistory(historyRaw) {
         }
     }).reverse()
 }
+
+
+const {OpenAI} = require('openai');
+const config = require('./config');
+
+const openai = new OpenAI({
+    apiKey: config.OPEN_AI_TOKEN,
+});
+
+// async function main1() {
+//     const assistant = await openai.beta.assistants.create({
+//         name: "AZ Test Bot 1",
+//         instructions: "Respond as if you are two bots, the first bot is the smart one who retreive the data and respond in pure knowledge, the other bot is a critiacl thinker of the first bot and critice on his response, I want you to write the name of the bot in the first of the response GPT Bot-1 for GPT Bot-1 and GPT Bot-2 for GPT Bot-2 of each response and split between different bot responses with @@-@@",
+//         model: "gpt-3.5-turbo"
+//     });
+
+//     console.log(assistant);
+// }
+
+// main1();
+
+
+async function main() {
+    // const thread = await openai.beta.threads.create();
+
+    // console.log(thread.id);
+
+    const message = await openai.beta.threads.messages.create(
+        'thread_fXBQj9TCfzmq7ukxyNdIZzxO',
+        {
+            role: "user",
+            content: "what is my name?"
+        }
+    );
+
+    let run = await openai.beta.threads.runs.createAndPoll(
+        'thread_fXBQj9TCfzmq7ukxyNdIZzxO',
+        {
+            assistant_id: 'asst_STuFsfBdrQpKwzmf3ygsbxyE'
+        }
+    );
+
+    if (run.status === 'completed') {
+        const messages = await openai.beta.threads.messages.list(
+            run.thread_id
+        );
+        for (const message of messages.data.reverse()) {
+            console.log(`${message.role} > ${message.content[0].text.value}`);
+        }
+    } else {
+        console.log(run.status);
+    }
+}
+
+main();
