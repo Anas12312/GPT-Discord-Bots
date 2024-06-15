@@ -8,31 +8,37 @@ const openai = new OpenAI({
 });
 
 // Function to get a response from the GPT model
-async function getGPTResponse(prompt, history) {
+async function getGPTResponse(prompt, threadId, botId) {
   try {
 
-    const run = await openai.beta.threads.createAndRunPoll({
-      assistant_id: "asst_STuFsfBdrQpKwzmf3ygsbxyE",
-      thread: {
-        messages: [
-          ...history,
-          { role: 'user', content: prompt }
-        ],
-      },
-    });
+    const message = await openai.beta.threads.messages.create(
+      threadId,
+      {
+        role: "user",
+        content: prompt
+      }
+    );
+
+    let run = await openai.beta.threads.runs.createAndPoll(
+      threadId,
+      {
+        assistant_id: botId
+      }
+    );
 
     if (run.status === 'completed') {
-
-
       const messages = await openai.beta.threads.messages.list(
         run.thread_id
       );
 
-      console.log(messages[-1]);
-      return messages.data[-1].content[0].text.value;
+      console.log(messages.data[0].content[0].text.value);
+
+      return messages.data[0].content[0].text.value
     } else {
-      throw new Error(run.status);
+      console.log(run.status);
     }
+
+    
 
 
     // const response = await openai.chat.completions.create({
@@ -52,8 +58,8 @@ async function getGPTResponse(prompt, history) {
   }
 }
 
-module.exports = async (prompt, history) => {
-  const response = await getGPTResponse(prompt, history);
+module.exports = async (prompt, threadId) => {
+  const response = await getGPTResponse(prompt, threadId);
   // console.log('GPT-3.5 Response:', response);
   return response
 }
