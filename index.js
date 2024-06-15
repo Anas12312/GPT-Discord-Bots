@@ -2,7 +2,7 @@ const { OpenAI } = require('openai')
 const bot1 = require('./bot-1')
 const bot2 = require('./bot-2')
 const fetchAllMessages = require('./fetchHistory')
-const gptRequest = require('./gptRequestbot')
+const gptRequest = require('./gptRequest')
 const config = require('./config')
 
 const chats = []
@@ -12,7 +12,7 @@ const bot2Id = 'asst_8i6WhnQF6OrSEdJ38kprqKtq'
 
 const openai = new OpenAI({
     apiKey: config.OPEN_AI_TOKEN,
-  });
+});
 bot1.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
@@ -23,7 +23,7 @@ bot1.on('interactionCreate', async interaction => {
     if (interaction.commandName === 'start') {
         if (chats.filter((c) => c.channelId === interaction.channelId)[0]) {
             await interaction.reply("Another chat has already started here!")
-            return 
+            return
         }
 
         const thread = await openai.beta.threads.create();
@@ -37,43 +37,52 @@ bot1.on('interactionCreate', async interaction => {
 });
 
 bot1.on("messageCreate", async (message) => {
-    if (message.author.bot) return
+    try {
+        if (message.author.bot) return
 
-    if (!chats.filter(x => x.channelId === message.channelId).length) return
+        if (!chats.filter(x => x.channelId === message.channelId).length) return
 
-    if (message.content.startsWith('!bot2')) return
+        if (message.content.startsWith('!bot2')) return
 
-    const channel = message.channel;
+        const channel = message.channel;
 
-    const historyRaw = await fetchAllMessages(channel)
-    const history = getAllHistory(historyRaw)
+        const threadId = chats.filter(x => x.channelId === message.channelId)[0].threadId
 
+        let firstResponse;
 
-    if(message.content.startsWith('!bot1')) {
+        if (message.content.startsWith('!bot1')) {
+            channel.sendTyping()
+
+            firstResponse = await gptRequest(message.content.slice(5), threadId, bot1Id);
+
+            await channel.send(firstResponse.slice(0, 1999))
+            return
+        }
+
+        if (message.content.startsWith('!bot2')) {
+            channel.sendTyping()
+
+            firstResponse = await gptRequest(message.content.slice(5), threadId, bot2Id);
+
+            await channel.send(firstResponse.slice(0, 1999))
+            return
+        }
+
+        const channel2 = await bot2.channels.fetch(message.channelId)
+
         channel.sendTyping()
+        firstResponse = await gptRequest(message.content, threadId, bot1Id);
 
-        let response = await gptRequestbot1(history)
+        await channel.send(firstResponse.slice(0, 1999));
 
-        await channel.send(response)
-        return
+
+        channel2.sendTyping()
+        let response2 = await gptRequest("Validate and simplifiy the following: " + firstResponse, threadId, bot2Id)
+
+        await channel2.send(response2.slice(0, 1999))
+    } catch(e) {
+        console.log(e);
     }
-
-    const channel2 = await bot2.channels.fetch(message.channelId)
-
-    channel.sendTyping()
-    let response = await gptRequestbot1(history)
-    response = removeTheTalker(response)
-    console.log(response)
-    
-    await channel.send(response)
-    
-    channel2.sendTyping()
-    let response2 = await gptRequestbot2(history.concat({
-        role: "assistant",
-        content: "GPT Bot 1: " + response
-    }))
-    response2 = removeTheTalker(response2)
-    await channel2.send(response2)
 })
 
 
@@ -82,19 +91,19 @@ function getAllHistory(historyRaw) {
         const bot = message.author.bot
         let content = message.content
         const username = message.author.username
-        if(content.startsWith("!bot1")) content = content.replace('!bot1', '')
-        if(content.startsWith("!bot2")) content = content.replace('!bot2', '')
+        if (content.startsWith("!bot1")) content = content.replace('!bot1', '')
+        if (content.startsWith("!bot2")) content = content.replace('!bot2', '')
         return {
-            role: bot? "assistant" : "user",
-            content: bot? username + ": " + content : content
+            role: bot ? "assistant" : "user",
+            content: bot ? username + ": " + content : content
         }
     }).reverse()
 }
 
 function removeTheTalker(response) {
-    while (response.startsWith('GPT Bot 1: ') || response.startsWith('GPT Bot 2: ')){
-        if(response.startsWith('GPT Bot 1: ')) response = response.replace('GPT Bot 1: ', '')
-        if(response.startsWith('GPT Bot 2: ')) response = response.replace('GPT Bot 2: ', '')
+    while (response.startsWith('GPT Bot 1: ') || response.startsWith('GPT Bot 2: ')) {
+        if (response.startsWith('GPT Bot 1: ')) response = response.replace('GPT Bot 1: ', '')
+        if (response.startsWith('GPT Bot 2: ')) response = response.replace('GPT Bot 2: ', '')
     }
     return response
 }

@@ -8,13 +8,13 @@ const openai = new OpenAI({
 });
 
 // Function to get a response from the GPT model
-async function getGPTResponse(prompt, threadId, botId) {
+async function getGPTResponse(prompt, threadId, botId, userOrAssistant = true) {
   try {
 
     const message = await openai.beta.threads.messages.create(
       threadId,
       {
-        role: "user",
+        role: userOrAssistant ? 'user' : 'assistant',
         content: prompt
       }
     );
@@ -58,8 +58,8 @@ async function getGPTResponse(prompt, threadId, botId) {
   }
 }
 
-module.exports = async (prompt, threadId) => {
-  const response = await getGPTResponse(prompt, threadId);
+module.exports = async (prompt, threadId, botId, userOrAssistant) => {
+  const response = await getGPTResponse(prompt, threadId, botId, userOrAssistant);
   // console.log('GPT-3.5 Response:', response);
   return response
 }
