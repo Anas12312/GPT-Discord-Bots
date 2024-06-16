@@ -38,6 +38,7 @@ bot1.on('interactionCreate', async interaction => {
 
 bot1.on("messageCreate", async (message) => {
     try {
+
         if (message.author.bot) return
 
         if (!chats.filter(x => x.channelId === message.channelId).length) return
@@ -47,6 +48,8 @@ bot1.on("messageCreate", async (message) => {
         const channel = message.channel;
 
         const threadId = chats.filter(x => x.channelId === message.channelId)[0].threadId
+
+        console.log(threadId);
 
         let firstResponse;
 
@@ -63,6 +66,50 @@ bot1.on("messageCreate", async (message) => {
             channel.sendTyping()
 
             firstResponse = await gptRequest(message.content.slice(5), threadId, bot2Id);
+
+            await channel.send(firstResponse.slice(0, 1999))
+            return
+        }
+
+        const channel2 = await bot2.channels.fetch(message.channelId)
+
+        channel.sendTyping()
+        firstResponse = await gptRequest(message.content, threadId, bot1Id);
+
+        await channel.send(firstResponse.slice(0, 1999));
+
+
+        channel2.sendTyping()
+        let response2 = await gptRequest("Validate and simplifiy the following: " + firstResponse, threadId, bot2Id)
+
+        await channel2.send(response2.slice(0, 1999))
+    } catch(e) {
+        console.log(e);
+    }
+})
+
+
+bot2.on("messageCreate", async (message) => {
+    try {
+
+        if (message.author.bot) return
+
+        if (!chats.filter(x => x.channelId === message.channelId).length) return
+
+        if (message.content.startsWith('!bot1')) return
+
+        const channel = message.channel;
+
+        const threadId = chats.filter(x => x.channelId === message.channelId)[0].threadId
+
+        console.log(threadId);
+
+        let firstResponse;
+
+        if (message.content.startsWith('!bot2')) {
+            channel.sendTyping()
+
+            firstResponse = await gptRequest(message.content.slice(5), threadId, bot1Id);
 
             await channel.send(firstResponse.slice(0, 1999))
             return
