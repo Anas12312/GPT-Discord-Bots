@@ -54,6 +54,34 @@ bot1.on("messageCreate", async (message) => {
         let firstResponse;
 
         if (message.content.startsWith('!bot1')) {
+
+            if (message.content.startsWith('!bot1 !x')) {
+
+                channel.sendTyping()
+
+                firstResponse = await gptRequest(message.content.slice(7), threadId, bot1Id);
+
+                await channel.send(firstResponse.slice(0, 1999))
+
+                await openai.beta.threads.messages.create(
+                    threadId,
+                    {
+                        role: 'user',
+                        content: 'Bot-1 Says: ' + firstResponse
+                    }
+                );
+
+                const secRespone = await gptRequest(firstResponse, threadId, bot2Id);
+
+                const channel2 = await bot2.channels.fetch(message.channelId)
+
+                channel2.sendTyping()
+
+                await channel2.send(secRespone.slice(0, 1999))
+
+                return
+            }
+
             channel.sendTyping()
 
             firstResponse = await gptRequest(message.content.slice(5), threadId, bot1Id);
@@ -62,28 +90,9 @@ bot1.on("messageCreate", async (message) => {
             return
         }
 
-        if (message.content.startsWith('!bot2')) {
-            channel.sendTyping()
-
-            firstResponse = await gptRequest(message.content.slice(5), threadId, bot2Id);
-
-            await channel.send(firstResponse.slice(0, 1999))
-            return
-        }
-
-        const channel2 = await bot2.channels.fetch(message.channelId)
-
-        channel.sendTyping()
-        firstResponse = await gptRequest(message.content, threadId, bot1Id);
-
-        await channel.send(firstResponse.slice(0, 1999));
-
-
-        channel2.sendTyping()
-        let response2 = await gptRequest("Validate and simplifiy the following: " + firstResponse, threadId, bot2Id)
-
-        await channel2.send(response2.slice(0, 1999))
-    } catch(e) {
+        
+        return
+    } catch (e) {
         console.log(e);
     }
 })
@@ -107,27 +116,37 @@ bot2.on("messageCreate", async (message) => {
         let firstResponse;
 
         if (message.content.startsWith('!bot2')) {
+
+            if (message.content.startsWith('!bot2 !x')) {
+
+                channel.sendTyping()
+
+                await openai.beta.threads.messages.create(
+                    threadId,
+                    {
+                        role: 'user',
+                        content: 'Bot-1 Says: ' + ((await openai.beta.threads.messages.list(threadId)).data.filter(x => x.assistant_id === bot1Id)[0].content[0].text)
+                    }
+                );
+
+                firstResponse = await gptRequest(message.content.slice(7), threadId, bot2Id);
+
+                await channel.send(firstResponse.slice(0, 1999))
+
+                return
+            }
+
             channel.sendTyping()
 
-            firstResponse = await gptRequest(message.content.slice(5), threadId, bot1Id);
+            firstResponse = await gptRequest(message.content.slice(5), threadId, bot2Id);
 
             await channel.send(firstResponse.slice(0, 1999))
             return
         }
 
-        const channel2 = await bot2.channels.fetch(message.channelId)
+        return
 
-        channel.sendTyping()
-        firstResponse = await gptRequest(message.content, threadId, bot1Id);
-
-        await channel.send(firstResponse.slice(0, 1999));
-
-
-        channel2.sendTyping()
-        let response2 = await gptRequest("Validate and simplifiy the following: " + firstResponse, threadId, bot2Id)
-
-        await channel2.send(response2.slice(0, 1999))
-    } catch(e) {
+    } catch (e) {
         console.log(e);
     }
 })
@@ -181,23 +200,19 @@ function removeTheTalker(response) {
 //     //     }
 //     // );
 
+//     const ass = await openai.beta.assistants.retrieve('asst_CIEbJGcME3XQB8O0Wr18chgm');
 
-//     let run = await openai.beta.threads.runs.createAndPoll(
-//         'thread_vCI1ba9Til22sCeaxR9mdRGA',
-//         {
-//             assistant_id: 'asst_8i6WhnQF6OrSEdJ38kprqKtq'
-//         }
-//     );
+//     console.log(ass.instructions);
 
-//     if (run.status === 'completed') {
-//         const messages = await openai.beta.threads.messages.list(
-//             run.thread_id
-//         );
+//     const ass1 = await openai.beta.assistants.retrieve('asst_8i6WhnQF6OrSEdJ38kprqKtq');
 
-//         console.log(messages.data[0].content[0].text.value);
-//     }
+//     console.log(ass1.instructions);
 
+//     await editAss('asst_CIEbJGcME3XQB8O0Wr18chgm', 'Your name is Bot-1')
 
+//     await editAss('asst_8i6WhnQF6OrSEdJ38kprqKtq',
+//         'Your name is Bot-2, there is other bot called Bot-1, Bot-1 will say information you respond with your opinion about that informations.'
+//     )
 // }
 
 // main();
